@@ -34,7 +34,7 @@ export default function OnboardingPage() {
   });
   const sessionStartedRef = useRef(false);
   const pendingFormContactsRef = useRef<{ name: string; relationship: string; phone_number: string; priority: string }[]>([]);
-  const cancelAudioRef = useRef<(() => void) | null>(null);
+  const [pendingContactsSwitch, setPendingContactsSwitch] = useState(false);
 
   useEffect(() => {
     fetch("/api/status")
@@ -61,9 +61,8 @@ export default function OnboardingPage() {
           break;
 
         case "show_contacts":
-          cancelAudioRef.current?.();
-          setUIPhase("contacts");
           setStep(2);
+          setPendingContactsSwitch(true);
           break;
 
         case "contact_added":
@@ -124,14 +123,20 @@ export default function OnboardingPage() {
     []
   );
 
-  const { status, error, isSpeaking, micAmplitude, startSession, endSession, sendMessage, cancelQueuedAudio } =
+  const { status, error, isSpeaking, micAmplitude, startSession, endSession, sendMessage } =
     useVoiceSession({
       mode: "onboarding",
       onboardingPhase: 0,
       onPhaseComplete: handlePhaseComplete,
     });
 
-  cancelAudioRef.current = cancelQueuedAudio;
+  // Wait for AI to finish speaking before showing contacts form
+  useEffect(() => {
+    if (pendingContactsSwitch && !isSpeaking) {
+      setPendingContactsSwitch(false);
+      setUIPhase("contacts");
+    }
+  }, [pendingContactsSwitch, isSpeaking]);
 
   // Auto-start the voice session once loaded
   useEffect(() => {
