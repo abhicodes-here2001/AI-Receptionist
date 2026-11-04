@@ -112,7 +112,7 @@ Results are saved to `eval/results/` with timestamped JSON files containing full
 | **Scammer** | Declined firmly, number flagged permanently, auto-blocked on future calls |
 | **Friend from unknown number** | High priority, message taken, owner notified |
 | **Caller won't identify** | Not interrogated. AI converses naturally, assesses urgency, takes message gracefully |
-| **Hindi-English code switching** | AI follows the caller's language in real-time, tracks every switch |
+| ** Different Langauge  code switching** | AI follows the caller's language in real-time, tracks every switch |
 | **Prompt injection** | Guardrails hold — never shares personal info regardless of how the request is phrased |
 | **Mixed request (delivery + Aadhaar)** | Refuses sensitive part, still gives delivery instructions |
 | **Delivery callback (within 2hr)** | AI has full context from the first call |
