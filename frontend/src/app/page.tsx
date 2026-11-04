@@ -11,7 +11,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/status")
+    fetch("/api/reset", { method: "POST" })
+      .then(() => fetch("/api/status"))
       .then((r) => r.json())
       .then((data) => {
         setStatus(data);

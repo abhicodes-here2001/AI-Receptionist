@@ -387,20 +387,35 @@ async def _handle_function_call(
         if language and (not state.language_states or state.language_states[-1] != language):
             state.language_states.append(language)
 
-        # Mid-call bypass: saved contact escalated to high priority
-        if state.is_saved_contact and priority == "high" and not state.is_bypass and owner:
+        # Check if owner's call_preferences say to bypass this type
+        pref_bypass = False
+        if owner and owner.call_preferences and not state.is_bypass:
+            ct_lower = caller_type.lower()
+            for pref_type, pref_action in owner.call_preferences.items():
+                if pref_type.lower() in ct_lower or ct_lower in pref_type.lower():
+                    if pref_action.lower() in ("accept", "bypass", "pass", "connect"):
+                        pref_bypass = True
+                        break
+
+        # Mid-call bypass: saved contact escalated OR preference says bypass
+        if not state.is_bypass and owner and (
+            (state.is_saved_contact and priority == "high")
+            or pref_bypass
+        ):
             state.is_bypass = True
-            new_prompt = bypass_prompt(owner, state.caller_name or "")
+            state.priority = "high"
+            new_prompt = bypass_prompt(owner, state.caller_name or caller_type)
             await openai_ws.send(json.dumps({
                 "type": "session.update",
                 "session": {"type": "realtime", "instructions": new_prompt},
             }))
+            reason = state.caller_name or caller_type
             await browser_ws.send_json({
                 "type": "status",
                 "status": "bypass",
-                "message": f"Escalated to bypass: {state.caller_name or 'saved contact'}",
+                "message": f"Escalated to bypass: {reason}",
             })
-            logger.info("Mid-call bypass triggered for saved contact: %s", state.caller_name)
+            logger.info("Bypass triggered for: %s (pref_bypass=%s)", reason, pref_bypass)
         else:
             new_prompt_key = map_caller_type_to_prompt_key(caller_type, is_scammer)
             if new_prompt_key != state.current_prompt_key:

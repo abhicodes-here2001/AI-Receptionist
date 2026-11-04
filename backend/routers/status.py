@@ -17,3 +17,10 @@ async def get_status():
             "default_language": storage.owner.default_language,
         }
     return {"onboarding_complete": False, "owner_name": None, "contact_count": 0, "default_language": None}
+
+
+@router.post("/reset")
+async def reset():
+    """Clear all data for a fresh onboarding."""
+    storage.reset()
+    return {"status": "reset"}

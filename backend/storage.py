@@ -72,6 +72,20 @@ class Storage:
             shutil.rmtree(self._data_dir)
             logger.info("Cleared data directory for fresh onboarding")
 
+    def reset(self) -> None:
+        """Public reset — clears all data for a fresh onboarding."""
+        self._clear_data()
+        self._data_dir.mkdir(parents=True, exist_ok=True)
+        self._logs_dir = self._data_dir / "call_logs"
+        self._logs_dir.mkdir(exist_ok=True)
+        self._owner = None
+        self.contacts = []
+        self.sessions = {}
+        self.scammer_numbers = set()
+        self._phone_index = {}
+        self._next_call_id = 1
+        logger.info("Storage reset complete")
+
     # ------------------------------------------------------------------
     # Disk I/O helpers
     # ------------------------------------------------------------------
