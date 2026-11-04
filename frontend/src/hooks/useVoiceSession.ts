@@ -276,6 +276,7 @@ export function useVoiceSession(options: VoiceSessionOptions = {}) {
     startSession,
     endSession,
     sendMessage,
+    cancelQueuedAudio,
   };
 }
 

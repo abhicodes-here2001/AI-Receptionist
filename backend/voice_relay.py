@@ -391,10 +391,15 @@ async def _handle_function_call(
         pref_bypass = False
         if owner and owner.call_preferences and not state.is_bypass:
             ct_lower = caller_type.lower()
+            accept_keywords = {"accept", "bypass", "pass", "connect", "forward", "allow", "yes", "want", "interested"}
             for pref_type, pref_action in owner.call_preferences.items():
-                if pref_type.lower() in ct_lower or ct_lower in pref_type.lower():
-                    if pref_action.lower() in ("accept", "bypass", "pass", "connect"):
+                pt_lower = pref_type.lower()
+                # Fuzzy match: "recruiters" matches "recruiter", "insurance agent" matches "insurance", etc.
+                if pt_lower in ct_lower or ct_lower in pt_lower or any(w in ct_lower for w in pt_lower.split()):
+                    action_words = set(pref_action.lower().split())
+                    if action_words & accept_keywords or pref_action.lower().startswith("accept") or pref_action.lower().startswith("bypass"):
                         pref_bypass = True
+                        logger.info("Preference bypass match: pref_type=%s, pref_action=%s, caller_type=%s", pref_type, pref_action, caller_type)
                         break
 
         # Mid-call bypass: saved contact escalated OR preference says bypass

@@ -34,6 +34,7 @@ export default function OnboardingPage() {
   });
   const sessionStartedRef = useRef(false);
   const pendingFormContactsRef = useRef<{ name: string; relationship: string; phone_number: string; priority: string }[]>([]);
+  const cancelAudioRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     fetch("/api/status")
@@ -60,6 +61,7 @@ export default function OnboardingPage() {
           break;
 
         case "show_contacts":
+          cancelAudioRef.current?.();
           setUIPhase("contacts");
           setStep(2);
           break;
@@ -122,12 +124,14 @@ export default function OnboardingPage() {
     []
   );
 
-  const { status, error, isSpeaking, micAmplitude, startSession, endSession, sendMessage } =
+  const { status, error, isSpeaking, micAmplitude, startSession, endSession, sendMessage, cancelQueuedAudio } =
     useVoiceSession({
       mode: "onboarding",
       onboardingPhase: 0,
       onPhaseComplete: handlePhaseComplete,
     });
+
+  cancelAudioRef.current = cancelQueuedAudio;
 
   // Auto-start the voice session once loaded
   useEffect(() => {
