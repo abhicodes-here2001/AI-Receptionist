@@ -2,12 +2,13 @@
 
 Uses GPT-4o in text mode (not voice) to simulate conversations.
 The caller follows a scripted set of lines; the AI uses our actual prompts.
-Outputs transcripts to eval/results/ for judging.
+Outputs transcripts to eval/results/, then judges them automatically.
 
 Usage:
-    python -m eval.run_eval                    # run all scenarios
-    python -m eval.run_eval --scenario mom_saved_high  # run one
+    python -m eval.run_eval                    # run all scenarios + judge
+    python -m eval.run_eval --scenario mom_saved_high  # run one + judge
     python -m eval.run_eval --list             # list scenarios
+    python -m eval.run_eval --no-judge         # run without judging
 """
 
 from __future__ import annotations
@@ -268,6 +269,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run AI Receptionist evaluation scenarios")
     parser.add_argument("--scenario", type=str, help="Run a specific scenario by ID")
     parser.add_argument("--list", action="store_true", help="List all scenarios")
+    parser.add_argument("--no-judge", action="store_true", help="Skip auto-judging after simulation")
     args = parser.parse_args()
 
     scenarios = load_scenarios()
@@ -309,7 +311,28 @@ def main():
     output_path.write_text(json.dumps(all_results, indent=2, ensure_ascii=False))
     logger.info("\n" + "=" * 60)
     logger.info("Results saved to: %s", output_path)
-    logger.info("Run judge: python -m eval.judge %s", output_path)
+
+    # Auto-judge unless --no-judge
+    if not args.no_judge:
+        logger.info("\n" + "=" * 60)
+        logger.info("Judging transcripts...")
+        logger.info("=" * 60)
+
+        from eval.judge import judge_transcript, print_report
+
+        judged = []
+        for result in all_results:
+            logger.info("  Scoring: %s", result.get("scenario_name", result.get("scenario_id")))
+            scored = judge_transcript(client, result)
+            judged.append(scored)
+
+        print_report(judged)
+
+        judged_path = output_path.with_name(output_path.stem + "_judged.json")
+        judged_path.write_text(json.dumps(judged, indent=2, ensure_ascii=False))
+        logger.info("\nJudged results saved to: %s", judged_path)
+    else:
+        logger.info("Judge manually: python -m eval.judge %s", output_path)
 
 
 if __name__ == "__main__":
