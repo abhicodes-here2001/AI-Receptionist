@@ -54,6 +54,7 @@ export function useVoiceSession(options: VoiceSessionOptions = {}) {
   const playbackTimeRef = useRef<number>(0);
   const scheduledSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const isActiveRef = useRef(false);
+  const greetingDoneRef = useRef(false);
   const speakingCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const cancelQueuedAudio = useCallback(() => {
@@ -104,6 +105,7 @@ export function useVoiceSession(options: VoiceSessionOptions = {}) {
     setIsSpeaking(false);
     setMicAmplitude(0);
     isActiveRef.current = true;
+    greetingDoneRef.current = false;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -151,6 +153,7 @@ export function useVoiceSession(options: VoiceSessionOptions = {}) {
 
         if (
           !isActiveRef.current ||
+          !greetingDoneRef.current ||
           !ws ||
           ws.readyState !== WebSocket.OPEN
         )
@@ -204,7 +207,10 @@ export function useVoiceSession(options: VoiceSessionOptions = {}) {
             break;
 
           case "audio_done":
-            // Don't set isSpeaking false here — let the playback check handle it
+            // Mic unmuted after the AI's first greeting finishes
+            if (!greetingDoneRef.current) {
+              greetingDoneRef.current = true;
+            }
             break;
 
           case "speech_started":
